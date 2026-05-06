@@ -9,6 +9,10 @@ engineering with LangChain, RAG, and tool-calling agents.
 📡 **API:** https://arco-papers-api.onrender.com/health  
 📱 **Frontend Repo:** https://github.com/Awanjee/arco-papers-app
 
+## Demo
+
+▶️ [Watch 2-minute demo](https://www.loom.com/share/516dc81b811446ebbfbe28b6fa49836c)
+
 ---
 
 ## What It Does
