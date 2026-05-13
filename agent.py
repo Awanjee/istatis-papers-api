@@ -1,6 +1,8 @@
 from typing import Any
-
+from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
 
 try:
     # Imported for typing + history storage. We keep these optional so the
@@ -259,3 +261,78 @@ def chat(message: str, history: list[BaseMessage]) -> tuple[str, list[BaseMessag
     history.append(HumanMessage(content=message))
     history.append(AIMessage(content=answer))
     return answer, history
+
+
+async def generate_quote(
+    customer_name: str,
+    company: str,
+    email: str,
+    product_type: str,
+    quantity: int,
+    notes: str = "",
+) -> dict:
+    """
+    Generate a professional quote for a customer.
+    Returns quote text and calculated pricing.
+    """
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
+
+    # Get pricing first using our existing tool
+    pricing_result = get_pricing_tier.invoke(
+        {
+            "product_type": product_type,
+            "quantity": quantity,
+        }
+    )
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are a professional sales
+        representative for Arco Papers, a paper
+        manufacturer in Islamabad, Pakistan.
+        Generate a formal but friendly quote email
+        body. Include:
+        - Thank the customer by name
+        - Confirm the product and quantity
+        - State the pricing clearly in PKR
+        - Mention delivery is available across Pakistan
+        - Ask them to reply to confirm the order
+        - Sign off as Arco Papers Sales Team
+        Keep it under 150 words. Professional tone.""",
+            ),
+            (
+                "human",
+                "Customer: {name}\n"
+                "Company: {company}\n"
+                "Product: {product}\n"
+                "Quantity: {quantity}\n"
+                "Pricing info: {pricing}\n"
+                "Additional notes: {notes}",
+            ),
+        ]
+    )
+
+    chain = prompt | llm | StrOutputParser()
+
+    quote_text = await chain.ainvoke(
+        {
+            "name": customer_name,
+            "company": company,
+            "product": product_type,
+            "quantity": quantity,
+            "pricing": pricing_result,
+            "notes": notes or "None",
+        }
+    )
+
+    return {
+        "quote_text": quote_text,
+        "pricing_summary": pricing_result,
+        "customer_name": customer_name,
+        "company": company,
+        "email": email,
+        "product_type": product_type,
+        "quantity": quantity,
+    }
