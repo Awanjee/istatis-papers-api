@@ -40,7 +40,7 @@ class QuoteRequest(BaseModel):
     customer_name: str
     company: str
     email: str
-    product_type: str
+    product_name: str  # changed from product_type
     quantity: int
     notes: str = ""
 
@@ -140,10 +140,17 @@ async def quote_endpoint(request: QuoteRequest):
             customer_name=request.customer_name,
             company=request.company,
             email=request.email,
-            product_type=request.product_type,
+            product_name=request.product_name,
             quantity=request.quantity,
             notes=request.notes,
         )
+
+        if "error" in quote:
+            return QuoteResponse(
+                success=False,
+                message=quote["error"],
+                quote_summary="",
+            )
 
         email_sent = send_quote_email(quote)
 
@@ -160,7 +167,7 @@ async def quote_endpoint(request: QuoteRequest):
     except Exception as e:
         return QuoteResponse(
             success=False,
-            message=f"Error generating quote: {str(e)}",
+            message=f"Error: {str(e)}",
             quote_summary="",
         )
 
