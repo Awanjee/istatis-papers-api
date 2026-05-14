@@ -40,7 +40,7 @@ class QuoteRequest(BaseModel):
     customer_name: str
     company: str
     email: str
-    product_name: str  # changed from product_type
+    product_name: str
     quantity: int
     notes: str = ""
 
@@ -84,7 +84,7 @@ def send_quote_email(quote: dict) -> bool:
             background:#f0f7f4;border-radius:8px;
             font-size:13px;color:#555;">
             <strong>Quote Details:</strong><br>
-            Product: {quote['product_type']}<br>
+            Product: {quote['product_name']}<br>
             Quantity: {quote['quantity']:,} units<br>
             {quote['pricing_summary']}
         </div>
@@ -102,7 +102,7 @@ def send_quote_email(quote: dict) -> bool:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = (
             f"Your Quote from Arco Papers — "
-            f"{quote['product_type']} x "
+            f"{quote['product_name']} x "
             f"{quote['quantity']:,}"
         )
         msg["From"] = gmail
@@ -135,6 +135,7 @@ def send_quote_email(quote: dict) -> bool:
 
 @app.post("/quote", response_model=QuoteResponse)
 async def quote_endpoint(request: QuoteRequest):
+    print(f"Received request: {request}")
     try:
         quote = await generate_quote(
             customer_name=request.customer_name,
