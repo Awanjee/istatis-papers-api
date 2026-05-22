@@ -1,10 +1,16 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 from datetime import datetime
 import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from agent import chat, generate_quote
+from auth import get_current_user
+from database import (
+    create_order_from_quote,
+    get_client_by_email,
+    get_quotes_for_client,
+)
 from fastapi.middleware.cors import CORSMiddleware
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -49,6 +55,32 @@ class QuoteResponse(BaseModel):
     success: bool
     message: str
     quote_summary: str
+
+
+class QuoteHistoryItem(BaseModel):
+    id: str
+    quantity: int
+    unit_price: float
+    total_price: float
+    status: str
+    notes: str | None = None
+    created_at: str | None = None
+    quote_text: str | None = None
+    product_name: str | None = None
+    product_unit: str | None = None
+
+
+class OrderCreateRequest(BaseModel):
+    quote_id: str
+
+
+class OrderResponse(BaseModel):
+    id: str
+    status: str
+    total_amount: float
+    quote_id: str
+    product_name: str | None = None
+    message: str = "Order created successfully"
 
 
 def send_quote_email(quote: dict) -> bool:
@@ -194,3 +226,58 @@ async def chat_endpoint(request: MessageRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok", "sessions": len(sessions)}
+
+
+def _quote_to_history_item(row: dict) -> QuoteHistoryItem:
+    product = row.get("products") or {}
+    return QuoteHistoryItem(
+        id=row["id"],
+        quantity=row["quantity"],
+        unit_price=float(row["unit_price"]),
+        total_price=float(row["total_price"]),
+        status=row["status"],
+        notes=row.get("notes"),
+        created_at=row.get("created_at"),
+        quote_text=row.get("quote_text"),
+        product_name=product.get("name"),
+        product_unit=product.get("unit"),
+    )
+
+
+@app.get("/quotes/history", response_model=list[QuoteHistoryItem])
+async def quotes_history(current_user: dict = Depends(get_current_user)):
+    email = current_user["email"]
+    rows = get_quotes_for_client(email)
+    return [_quote_to_history_item(r) for r in rows]
+
+
+@app.post("/orders", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
+async def create_order(
+    request: OrderCreateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    email = current_user["email"]
+    client = get_client_by_email(email)
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No client record found. Submit a quote first.",
+        )
+
+    try:
+        order = create_order_from_quote(request.quote_id, client["id"])
+    except ValueError as e:
+        msg = str(e)
+        if "does not belong" in msg:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=msg)
+        if "not found" in msg.lower():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+
+    return OrderResponse(
+        id=order["id"],
+        status=order["status"],
+        total_amount=float(order["total_amount"]),
+        quote_id=request.quote_id,
+        product_name=order.get("product_name"),
+    )

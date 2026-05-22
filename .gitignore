@@ -10,3 +10,7 @@ __pycache__/
 .vscode/
 chroma_db/
 chroma_arco/
+
+# Local Cursor rules (personal, not shared)
+.cursor/rules/profile.local.md
+.cursor/rules/handover.global.md

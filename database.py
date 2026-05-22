@@ -167,23 +167,112 @@ def save_quote(
     return quote_result.data[0]
 
 
-def get_quotes_for_client(
-    email: str,
-) -> list[dict]:
-    """Get all quotes for a client by email."""
+def get_client_by_email(email: str) -> dict | None:
+    """Find a client row by email for the Arco Papers tenant."""
+    tenant_id = get_tenant_id()
+    result = (
+        supabase.table("clients")
+        .select("id, name, company, email")
+        .eq("tenant_id", tenant_id)
+        .eq("email", email)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        return None
+    return result.data[0]
+
+
+def get_quotes_for_client_id(client_id: str) -> list[dict]:
+    """Get all quotes for a client."""
     result = (
         supabase.table("quotes")
         .select(
-            "id, quantity, unit_price, "
+            "id, client_id, product_id, quantity, unit_price, "
             "total_price, status, notes, "
             "created_at, quote_text, "
             "products(name, unit)"
         )
-        .eq("clients.email", email)
+        .eq("client_id", client_id)
         .order("created_at", desc=True)
         .execute()
     )
     return result.data
+
+
+def get_quotes_for_client(email: str) -> list[dict]:
+    """Get all quotes for a client by email."""
+    client = get_client_by_email(email)
+    if not client:
+        return []
+    return get_quotes_for_client_id(client["id"])
+
+
+def get_quote_by_id(quote_id: str) -> dict | None:
+    """Fetch a single quote with client_id for ownership checks."""
+    result = (
+        supabase.table("quotes")
+        .select(
+            "id, tenant_id, client_id, product_id, quantity, "
+            "unit_price, total_price, status, notes, "
+            "created_at, quote_text, "
+            "products(name, unit)"
+        )
+        .eq("id", quote_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        return None
+    return result.data[0]
+
+
+def create_order_from_quote(quote_id: str, client_id: str) -> dict:
+    """
+    Create an order and line item from an existing quote.
+    Raises ValueError with a message for business-rule failures.
+    """
+    quote = get_quote_by_id(quote_id)
+    if not quote:
+        raise ValueError("Quote not found")
+
+    if quote["client_id"] != client_id:
+        raise ValueError("Quote does not belong to this client")
+
+    if quote.get("status") in ("ordered", "cancelled"):
+        raise ValueError(f"Quote cannot be ordered (status: {quote['status']})")
+
+    tenant_id = quote["tenant_id"]
+    total_amount = float(quote["total_price"])
+
+    order_payload: dict = {
+        "tenant_id": tenant_id,
+        "client_id": client_id,
+        "quote_id": quote_id,
+        "total_amount": total_amount,
+        "status": "pending",
+    }
+
+    # quote_id column may exist on orders — include if present in schema
+    order_result = supabase.table("orders").insert(order_payload).execute()
+    order = order_result.data[0]
+    order_id = order["id"]
+
+    item_payload = {
+        "order_id": order_id,
+        "product_id": quote["product_id"],
+        "quantity": quote["quantity"],
+        "unit_price": float(quote["unit_price"]),
+    }
+    supabase.table("order_items").insert(item_payload).execute()
+
+    supabase.table("quotes").update({"status": "ordered"}).eq("id", quote_id).execute()
+
+    return {
+        **order,
+        "quote_id": quote_id,
+        "product_name": quote.get("products", {}).get("name"),
+    }
 
 
 def get_dashboard_metrics() -> dict:

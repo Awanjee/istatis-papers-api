@@ -115,10 +115,18 @@ playwright install chromium
 ```
 
 Create `.env`:
+```
 OPENAI_API_KEY=your_key_here
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_service_role_or_anon_key
+SUPABASE_JWT_SECRET=your_jwt_secret_from_dashboard
 GMAIL_ADDRESS=your_gmail@gmail.com
 GMAIL_APP_PASSWORD=your_app_password
 NOTIFY_EMAIL=your_email@gmail.com
+```
+
+`SUPABASE_JWT_SECRET` is under **Project Settings → API → JWT Settings**.
+It is **not** the same as `SUPABASE_KEY` (API key). Required for protected routes.
 
 Run:
 ```bash
@@ -146,10 +154,13 @@ flutter run -d chrome
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/chat` | Send message, get AI response |
-| GET | `/health` | Health check |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/chat` | No | Send message, get AI response |
+| POST | `/quote` | No | Generate and email a quote |
+| GET | `/quotes/history` | Bearer JWT | List quotes for logged-in client |
+| POST | `/orders` | Bearer JWT | Create order from `quote_id` |
+| GET | `/health` | No | Health check |
 
 ### Chat Request
 ```json
