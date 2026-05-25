@@ -1,7 +1,8 @@
 import requests
 import os
 import json
-from datetime import date, datetime
+
+from datetime import date  # , datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,7 +51,7 @@ def days_overdue(due_date_str):
 
 def run_reminders():
     payments = load_payments()
-    today = date.today().isoformat()
+    # today = date.today().isoformat()
 
     for p in payments:
         overdue = days_overdue(p["due_date"])
