@@ -1,8 +1,9 @@
 """
-Research Assistant — LangGraph implementation (Level 5)
+Research Assistant — LangGraph implementation (Level 5 + RAG)
 
 Same capability as research_assistant.py (Level 4) but built as a LangGraph
-graph instead of a hand-rolled while loop.
+graph instead of a hand-rolled while loop.  Adds a search_catalog tool that
+does semantic search over the Arco Papers product catalog via ChromaDB.
 
 Compare the two files side by side to see exactly what LangGraph buys you:
   - The agent loop is gone
@@ -10,12 +11,18 @@ Compare the two files side by side to see exactly what LangGraph buys you:
   - finish_reason checking is gone
   - The graph declaration replaces all of it
 
+Prerequisites:
+  Index the catalog first (one-time, costs a few cents in embeddings):
+    cd C:\\Usama\\Projects\\arco-papers
+    venv\\Scripts\\python backend/rag.py
+
 Run:
   cd C:\\Usama\\Projects\\arco-papers
   venv\\Scripts\\python backend/research_assistant_lg.py
 """
 
 import json
+import sys
 from pathlib import Path
 from datetime import datetime
 from typing import Annotated
@@ -32,6 +39,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
+
+# Make sure backend/ is importable when running as a script
+sys.path.insert(0, str(Path(__file__).parent))
+from rag import query_catalog  # noqa: E402
 
 load_dotenv()
 
@@ -155,11 +166,33 @@ def get_saved_notes() -> str:
         return f"Failed to read notes: {e}"
 
 
+@tool
+def search_catalog(query: str) -> str:
+    """
+    Search the LOCAL Arco Papers product catalog (ChromaDB vector store).
+    This catalog contains pricing tiers, product specs, minimum order quantities,
+    lead times, custom printing details, and company information for all Arco Papers
+    products: envelopes (C4, C5, DL, A4, courier, window), paper (A4/A3, 70/80gsm),
+    stationery (letter pads, notebooks, registers), files/folders, and printing services.
+
+    ALWAYS call this tool FIRST for any question about Arco Papers products, pricing,
+    or services — it is faster and more accurate than web search for these topics.
+
+    Args:
+        query: a natural-language question about Arco products or pricing
+    """
+    try:
+        result = query_catalog(query, k=3)
+        return result if result else "No matching catalog entries found."
+    except Exception as e:
+        return f"Catalog search failed: {e}"
+
+
 # ---------------------------------------------------------------------------
 # Graph definition
 # ---------------------------------------------------------------------------
 
-TOOLS = [search_web, fetch_and_summarise, save_note, get_saved_notes]
+TOOLS = [search_web, fetch_and_summarise, save_note, get_saved_notes, search_catalog]
 
 
 # State is just a list of messages with the add_messages reducer.
@@ -214,12 +247,17 @@ def build_graph():
 # Runner — same interface as Level 4 for easy comparison
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are a focused research assistant. When given a research task:
-1. Search for relevant information using search_web
-2. Fetch specific pages with fetch_and_summarise when you need details
-3. Check existing notes with get_saved_notes before duplicating research
-4. Save important findings with save_note
-5. Provide a clear summary once you have enough information
+SYSTEM_PROMPT = """You are a focused research assistant with access to the Arco Papers internal product catalog (via search_catalog) and the web (via search_web).
+
+CRITICAL RULE: For ANY question about Arco Papers products, pricing, envelopes, paper, stationery, files, printing services, or company info — call search_catalog FIRST before doing anything else. This catalog is the authoritative source and will always have the answer.
+
+Workflow:
+1. Arco product/pricing question? → search_catalog immediately
+2. External or current web info needed? → search_web
+3. Need full page content? → fetch_and_summarise
+4. Check for prior research? → get_saved_notes
+5. Preserve key findings? → save_note
+6. Summarise clearly once you have enough information.
 
 Be thorough but efficient. Aim to complete research in 3-5 tool calls."""
 
@@ -257,13 +295,15 @@ def run_research_assistant(task: str) -> str:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    # RAG smoke-test: single focused query — should be answered entirely from
+    # the local ChromaDB catalog without a single web search call.
     task = (
-        "Research LangGraph vs LangChain for Python agent "
-        "development and save a comparison note"
+        "What are the bulk pricing tiers for C4 envelopes at Arco Papers, "
+        "and what is the minimum order quantity?"
     )
 
     print("=" * 70)
-    print("RESEARCH ASSISTANT (LangGraph) — Level 5")
+    print("RESEARCH ASSISTANT (LangGraph + RAG) — Level 5")
     print("=" * 70)
     print(f"\nTask: {task}\n")
     print("Running...\n")
