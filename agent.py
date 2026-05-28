@@ -197,14 +197,21 @@ def build_agent():
     )
 
 
-executor = build_agent()
+_executor = None
+
+
+def _get_executor():
+    global _executor
+    if _executor is None:
+        _executor = build_agent()
+    return _executor
 
 
 def chat(
     message: str,
     history: list,
 ) -> tuple[str, list]:
-    response = executor.invoke({"input": message, "history": history})
+    response = _get_executor().invoke({"input": message, "history": history})
     answer = response["output"]
     history.append(HumanMessage(content=message))
     history.append(AIMessage(content=answer))

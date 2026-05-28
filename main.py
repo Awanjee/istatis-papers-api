@@ -1,8 +1,9 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.responses import FileResponse, JSONResponse
 from datetime import datetime
 import os
+from extraction_router import router as extraction_router
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from agent import chat, generate_quote
 from auth import get_current_user
@@ -16,6 +17,8 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+CORS_HEADERS = {"Access-Control-Allow-Origin": "*"}
+
 app = FastAPI(title="Arco Papers AI Assistant")
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +26,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(extraction_router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Ensure CORS headers are present even on unhandled 500s."""
+    import traceback
+    traceback.print_exc()  # still logs to uvicorn terminal
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+        headers=CORS_HEADERS,
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Ensure CORS headers are present on HTTPExceptions (4xx/5xx)."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=CORS_HEADERS,
+    )
 
 # Serve static files (our HTML frontend)
 app.mount("/static", StaticFiles(directory="static"), name="static")
