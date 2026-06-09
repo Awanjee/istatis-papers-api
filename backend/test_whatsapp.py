@@ -15,7 +15,7 @@ def send_test_message(to_number: str):
         "messaging_product": "whatsapp",
         "to": to_number,
         "type": "text",
-        "text": {"body": "Arco Papers WhatsApp integration test. Working."},
+        "text": {"body": "iStatis WhatsApp integration test. Working."},
     }
     response = requests.post(url, headers=headers, json=payload)
     print(response.status_code)

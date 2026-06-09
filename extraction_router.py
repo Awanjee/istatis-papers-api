@@ -1,5 +1,5 @@
 """
-Invoice extraction router for Arco Papers.
+Invoice extraction router for iStatis.
 Mounts at /extract in main.py via: app.include_router(extraction_router)
 """
 
@@ -14,13 +14,13 @@ from pydantic import BaseModel
 
 from database import supabase
 
-# Single-tenant: hardcoded UUID for Arco Papers internal use.
+# Single-tenant: hardcoded UUID for iStatis internal use.
 # Replace with a real tenants lookup if/when multi-tenant is needed.
-_ARCO_TENANT_ID = "00000000-0000-0000-0000-000000000001"
+_ISTATIS_TENANT_ID = "00000000-0000-0000-0000-000000000001"
 
 
 def get_tenant_id() -> str:
-    return _ARCO_TENANT_ID
+    return _ISTATIS_TENANT_ID
 
 router = APIRouter(prefix="/extract", tags=["extraction"])
 _openai = AsyncOpenAI()
@@ -150,6 +150,7 @@ class ConfirmRequest(BaseModel):
     party_name_urdu: Optional[str] = None
     transaction_date: Optional[str] = None  # "DD/MM/YY" or "DD/MM/YYYY"
     document_type: Optional[str] = None
+    transaction_type: Optional[str] = "sale"  # sale | payment_received | purchase | expense
     total_amount: Optional[float] = None
     line_items: list[LineItemIn] = []
     notes: Optional[str] = None
@@ -266,6 +267,7 @@ async def confirm_extraction(extraction_id: str, body: ConfirmRequest):
             "party_id": party_id,
             "transaction_date": tx_date,
             "document_type": body.document_type,
+            "transaction_type": body.transaction_type or "sale",
             "total_amount": body.total_amount,
             "notes": body.notes,
         })
@@ -314,18 +316,103 @@ async def list_pending():
 
 
 @router.get("/transactions")
-async def list_transactions():
-    """Confirmed transactions with party info, newest first."""
+async def list_transactions(party_id: Optional[str] = None):
+    """Confirmed transactions with party info, newest first.
+    Optional ?party_id=UUID to filter by party."""
+    tenant_id = get_tenant_id()
+    query = (
+        supabase.table("transactions")
+        .select(
+            "id, transaction_date, document_type, transaction_type, "
+            "total_amount, notes, created_at, "
+            "parties(id, name_roman, name_urdu)"
+        )
+        .eq("tenant_id", tenant_id)
+        .order("transaction_date", desc=True)
+        .limit(100)
+    )
+    if party_id:
+        query = query.eq("party_id", party_id)
+    return query.execute().data
+
+
+@router.get("/transactions/{transaction_id}")
+async def get_transaction_detail(transaction_id: str):
+    """Single transaction with party info and all line items."""
+    row = (
+        supabase.table("transactions")
+        .select(
+            "id, transaction_date, document_type, transaction_type, "
+            "total_amount, notes, created_at, "
+            "parties(id, name_roman, name_urdu), "
+            "transaction_line_items(id, product_code, description, "
+            "quantity, unit_price, amount, confidence, notes)"
+        )
+        .eq("id", transaction_id)
+        .single()
+        .execute()
+    )
+    if not row.data:
+        raise HTTPException(404, detail="Transaction not found")
+    return row.data
+
+
+@router.get("/parties/balances")
+async def get_party_balances():
+    """
+    Per-party running balance, sorted by outstanding amount descending.
+    Balance = SUM(sales) - SUM(payments_received).
+    Positive = party owes iStatis. Negative = iStatis owes party.
+    """
     tenant_id = get_tenant_id()
     rows = (
         supabase.table("transactions")
         .select(
-            "id, transaction_date, document_type, total_amount, notes, created_at, "
-            "parties(name_roman, name_urdu)"
+            "party_id, transaction_type, total_amount, transaction_date, "
+            "parties(id, name_roman, name_urdu)"
         )
         .eq("tenant_id", tenant_id)
-        .order("transaction_date", desc=True)
-        .limit(50)
+        .not_.is_("party_id", "null")
         .execute()
     )
-    return rows.data
+
+    # Aggregate in Python — simple enough at this data volume
+    from collections import defaultdict
+    balances: dict = defaultdict(lambda: {
+        "party_id": None,
+        "name_roman": None,
+        "name_urdu": None,
+        "balance": 0.0,
+        "total_sales": 0.0,
+        "total_payments": 0.0,
+        "transaction_count": 0,
+        "last_transaction_date": None,
+    })
+
+    for row in rows.data:
+        pid = row["party_id"]
+        party = row.get("parties") or {}
+        b = balances[pid]
+        b["party_id"] = pid
+        b["name_roman"] = party.get("name_roman")
+        b["name_urdu"] = party.get("name_urdu")
+        b["transaction_count"] += 1
+
+        amount = float(row.get("total_amount") or 0)
+        tx_type = row.get("transaction_type") or "sale"
+        if tx_type == "sale":
+            b["total_sales"] += amount
+            b["balance"] += amount
+        elif tx_type == "payment_received":
+            b["total_payments"] += amount
+            b["balance"] -= amount
+        elif tx_type == "purchase":
+            b["balance"] -= amount
+        # expense doesn't affect party balance
+
+        date = row.get("transaction_date")
+        if date and (b["last_transaction_date"] is None or date > b["last_transaction_date"]):
+            b["last_transaction_date"] = date
+
+    result = sorted(balances.values(), key=lambda x: x["balance"], reverse=True)
+    return result

@@ -1,10 +1,10 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import FileResponse, JSONResponse
-from datetime import datetime
-import os
 from extraction_router import router as extraction_router
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 from agent import chat, generate_quote
 from auth import get_current_user
 from database import (
@@ -13,13 +13,20 @@ from database import (
     get_quotes_for_client,
 )
 from fastapi.middleware.cors import CORSMiddleware
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email_service import send_quote_email
+from schemas import (
+    MessageRequest,
+    MessageResponse,
+    OrderCreateRequest,
+    OrderResponse,
+    QuoteHistoryItem,
+    QuoteRequest,
+    QuoteResponse,
+)
 
 CORS_HEADERS = {"Access-Control-Allow-Origin": "*"}
 
-app = FastAPI(title="Arco Papers AI Assistant")
+app = FastAPI(title="iStatis AI Assistant")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -56,139 +63,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # In-memory session store — simple dict keyed by session_id
 # In production this would be Redis or a database
 sessions: dict = {}
-
-
-class MessageRequest(BaseModel):
-    message: str
-    session_id: str = "default"
-
-
-class MessageResponse(BaseModel):
-    response: str
-    session_id: str
-
-
-class QuoteRequest(BaseModel):
-    customer_name: str
-    company: str
-    email: str
-    product_name: str
-    quantity: int
-    notes: str = ""
-
-
-class QuoteResponse(BaseModel):
-    success: bool
-    message: str
-    quote_summary: str
-
-
-class QuoteHistoryItem(BaseModel):
-    id: str
-    quantity: int
-    unit_price: float
-    total_price: float
-    status: str
-    notes: str | None = None
-    created_at: str | None = None
-    quote_text: str | None = None
-    product_name: str | None = None
-    product_unit: str | None = None
-
-
-class OrderCreateRequest(BaseModel):
-    quote_id: str
-
-
-class OrderResponse(BaseModel):
-    id: str
-    status: str
-    total_amount: float
-    quote_id: str
-    product_name: str | None = None
-    message: str = "Order created successfully"
-
-
-def send_quote_email(quote: dict) -> bool:
-    """Send quote email to customer and Arco Papers."""
-    gmail = os.getenv("GMAIL_ADDRESS")
-    password = os.getenv("GMAIL_APP_PASSWORD")
-
-    if not all([gmail, password]):
-        return False
-
-    date_str = datetime.now().strftime("%d %B %Y")
-
-    html = f"""
-    <html>
-    <body style="font-family:Arial,sans-serif;
-        max-width:600px;margin:0 auto;padding:20px;">
-        <div style="background:#1a472a;padding:20px;
-            border-radius:8px;margin-bottom:24px;">
-            <h1 style="color:white;margin:0;
-                font-size:20px;">Arco Papers</h1>
-            <p style="color:#a8d5b5;margin:4px 0 0;
-                font-size:13px;">
-                Quote — {date_str}
-            </p>
-        </div>
-        <div style="padding:0 4px;color:#333;
-            font-size:14px;line-height:1.6;">
-            {quote['quote_text'].replace(
-                chr(10), '<br>'
-            )}
-        </div>
-        <div style="margin-top:24px;padding:16px;
-            background:#f0f7f4;border-radius:8px;
-            font-size:13px;color:#555;">
-            <strong>Quote Details:</strong><br>
-            Product: {quote['product_name']}<br>
-            Quantity: {quote['quantity']:,} units<br>
-            {quote['pricing_summary']}
-        </div>
-        <div style="margin-top:16px;font-size:11px;
-            color:#999;text-align:center;">
-            Arco Papers • Islamabad, Pakistan •
-            usamaawan925@gmail.com
-        </div>
-    </body>
-    </html>
-    """
-
-    try:
-        # Email to customer
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = (
-            f"Your Quote from Arco Papers — "
-            f"{quote['product_name']} x "
-            f"{quote['quantity']:,}"
-        )
-        msg["From"] = gmail
-        msg["To"] = quote["email"]
-        msg.attach(MIMEText(html, "html"))
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(gmail, password)
-            server.sendmail(gmail, quote["email"], msg.as_string())
-
-        # Notification to Arco Papers
-        notify_msg = MIMEMultipart("alternative")
-        notify_msg["Subject"] = (
-            f"New Quote Request — " f"{quote['customer_name']} " f"@ {quote['company']}"
-        )
-        notify_msg["From"] = gmail
-        notify_msg["To"] = gmail
-        notify_msg.attach(MIMEText(html, "html"))
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(gmail, password)
-            server.sendmail(gmail, gmail, notify_msg.as_string())
-
-        return True
-
-    except Exception as e:
-        print(f"Email error: {e}")
-        return False
 
 
 @app.post("/quote", response_model=QuoteResponse)

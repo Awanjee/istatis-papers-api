@@ -3,7 +3,7 @@ Research Assistant — LangGraph implementation (Level 5 + RAG)
 
 Same capability as research_assistant.py (Level 4) but built as a LangGraph
 graph instead of a hand-rolled while loop.  Adds a search_catalog tool that
-does semantic search over the Arco Papers product catalog via ChromaDB.
+does semantic search over the iStatis product catalog via ChromaDB.
 
 Compare the two files side by side to see exactly what LangGraph buys you:
   - The agent loop is gone
@@ -13,11 +13,11 @@ Compare the two files side by side to see exactly what LangGraph buys you:
 
 Prerequisites:
   Index the catalog first (one-time, costs a few cents in embeddings):
-    cd C:\\Usama\\Projects\\arco-papers
+    cd C:\\Usama\\Projects\\istatis-papers
     venv\\Scripts\\python backend/rag.py
 
 Run:
-  cd C:\\Usama\\Projects\\arco-papers
+  cd C:\\Usama\\Projects\\istatis-papers
   venv\\Scripts\\python backend/research_assistant_lg.py
 """
 
@@ -169,17 +169,17 @@ def get_saved_notes() -> str:
 @tool
 def search_catalog(query: str) -> str:
     """
-    Search the LOCAL Arco Papers product catalog (ChromaDB vector store).
+    Search the LOCAL iStatis product catalog (ChromaDB vector store).
     This catalog contains pricing tiers, product specs, minimum order quantities,
-    lead times, custom printing details, and company information for all Arco Papers
+    lead times, custom printing details, and company information for all iStatis
     products: envelopes (C4, C5, DL, A4, courier, window), paper (A4/A3, 70/80gsm),
     stationery (letter pads, notebooks, registers), files/folders, and printing services.
 
-    ALWAYS call this tool FIRST for any question about Arco Papers products, pricing,
+    ALWAYS call this tool FIRST for any question about iStatis products, pricing,
     or services — it is faster and more accurate than web search for these topics.
 
     Args:
-        query: a natural-language question about Arco products or pricing
+        query: a natural-language question about iStatis products or pricing
     """
     try:
         result = query_catalog(query, k=3)
@@ -247,12 +247,12 @@ def build_graph():
 # Runner — same interface as Level 4 for easy comparison
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are a focused research assistant with access to the Arco Papers internal product catalog (via search_catalog) and the web (via search_web).
+SYSTEM_PROMPT = """You are a focused research assistant with access to the iStatis internal product catalog (via search_catalog) and the web (via search_web).
 
-CRITICAL RULE: For ANY question about Arco Papers products, pricing, envelopes, paper, stationery, files, printing services, or company info — call search_catalog FIRST before doing anything else. This catalog is the authoritative source and will always have the answer.
+CRITICAL RULE: For ANY question about iStatis products, pricing, envelopes, paper, stationery, files, printing services, or company info — call search_catalog FIRST before doing anything else. This catalog is the authoritative source and will always have the answer.
 
 Workflow:
-1. Arco product/pricing question? → search_catalog immediately
+1. iStatis product/pricing question? → search_catalog immediately
 2. External or current web info needed? → search_web
 3. Need full page content? → fetch_and_summarise
 4. Check for prior research? → get_saved_notes
@@ -298,7 +298,7 @@ if __name__ == "__main__":
     # RAG smoke-test: single focused query — should be answered entirely from
     # the local ChromaDB catalog without a single web search call.
     task = (
-        "What are the bulk pricing tiers for C4 envelopes at Arco Papers, "
+        "What are the bulk pricing tiers for C4 envelopes at iStatis, "
         "and what is the minimum order quantity?"
     )
 

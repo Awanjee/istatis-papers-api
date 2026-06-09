@@ -233,7 +233,7 @@ async def score_tenders(
 ) -> list[dict]:
     """
     Use LLM to score each tender 0-100 for relevance
-    to Arco Papers. Returns tenders with score added.
+    to iStatis. Returns tenders with score added.
     """
     if not tenders:
         return []
@@ -246,7 +246,7 @@ async def score_tenders(
             (
                 "system",
                 """You are a procurement analyst for 
-        Arco Papers, a supplier of envelopes, paper, 
+        iStatis, a supplier of envelopes, paper, 
         file carriers, registers and notebooks in Pakistan.
         
         Score the following tender 0-100 for relevance:
@@ -440,7 +440,7 @@ def send_digest(tenders: list[dict]) -> None:
         </table>
         """
         subject_line = (
-            f"Arco Papers — {len(tenders)} Tender(s)"
+            f"iStatis — {len(tenders)} Tender(s)"
             f" | {len(high)} High Match | {date_str}"
         )
     else:
@@ -461,7 +461,7 @@ def send_digest(tenders: list[dict]) -> None:
             </div>
         </div>
         """
-        subject_line = f"Arco Papers — No Tenders This Week" f" | {date_str}"
+        subject_line = f"iStatis — No Tenders This Week" f" | {date_str}"
 
     # ── Full email ───────────────────────────────────────
     html = f"""
@@ -492,7 +492,7 @@ def send_digest(tenders: list[dict]) -> None:
                             <div style="color:white;
                                 font-size:20px;
                                 font-weight:700;">
-                                Arco Papers
+                                iStatis
                             </div>
                             <div style="color:#a8d5b5;
                                 font-size:13px;
@@ -527,7 +527,7 @@ def send_digest(tenders: list[dict]) -> None:
                             <div style="font-size:11px;
                                 color:#999;
                                 text-align:center;">
-                                Arco Papers Tender
+                                iStatis Tender
                                 Alert System •
                                 Islamabad, Pakistan
                                 • Runs every Monday
@@ -603,7 +603,7 @@ async def main():
     Run once immediately, then schedule weekly.
     Every Monday at 8am Pakistan time (UTC+5).
     """
-    print("Arco Papers Tender Scraper")
+    print("iStatis Tender Scraper")
     print("=" * 40)
     print("Running now...")
     await run_scraper()

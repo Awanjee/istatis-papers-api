@@ -1,19 +1,19 @@
-# Arco Papers — Session Handover
+# iStatis — Session Handover
 *Generated end of long session — verify against actual 
 code before trusting*
 
 ## Current state summary
-Full-stack AI platform for Arco Papers (family paper 
+Full-stack AI platform for iStatis (family paper 
 business, Islamabad PK). Two repos, both deployed and 
 working in production.
 
 ## Repos
-- Flutter: `C:\Usama\Projects\arco_papers_app`
-  - Firebase: https://arco-papers-app-6b721.web.app
-  - GitHub: github.com/Awanjee/arco-papers-app
-- API: `C:\Usama\Projects\arco-papers`
-  - Render: https://arco-papers-api.onrender.com
-  - GitHub: github.com/Awanjee/arco-papers-api
+- Flutter: `C:\Usama\Projects\istatis_app`
+  - Firebase: https://istatis-papers-app-6b721.web.app
+  - GitHub: github.com/Awanjee/istatis-papers-app
+- API: `C:\Usama\Projects\istatis-papers`
+  - Render: https://istatis-papers-api.onrender.com
+  - GitHub: github.com/Awanjee/istatis-papers-api
 
 ## Tech stack
 - Flutter web (Provider, Dio, Google Fonts)
@@ -67,7 +67,7 @@ chat_input.dart
 suggestion_chips.dart
 
 ## API structure
-arco-papers/
+istatis-papers/
 main.py          # FastAPI, /chat, /quote, /health
 agent.py         # LangChain agent, tools,
 # build_agent(), chat(),
@@ -83,7 +83,7 @@ Tables: tenants, categories, products, pricing_tiers,
 clients, quotes, orders, order_items
 
 - tenant_id on all tables (multi-tenancy ready)
-- Arco Papers is the only tenant currently
+- iStatis is the only tenant currently
 - RLS disabled for now
 - Products and pricing loaded from DB dynamically
   (not hardcoded anymore)
@@ -103,7 +103,7 @@ PYTHON_VERSION=3.12.0
 ## What's working in production
 - /chat — RAG agent with tool-calling, session memory
 - /quote — generates quote via LangChain, saves to 
-  Supabase, sends 2 emails (customer + Arco Papers)
+  Supabase, sends 2 emails (customer + iStatis)
 - /health — {"status":"ok","sessions":N}
 - Flutter: chat tab, catalogue tab, quote tab
 - Tender scraper — scrapes PPRA, Pakistan Post, 

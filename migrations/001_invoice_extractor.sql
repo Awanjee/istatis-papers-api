@@ -1,4 +1,4 @@
--- Invoice Extractor tables for Arco Papers
+-- Invoice Extractor tables for iStatis
 -- Run in Supabase SQL Editor (Dashboard > SQL Editor > New query)
 -- Safe to re-run: uses IF NOT EXISTS throughout
 --

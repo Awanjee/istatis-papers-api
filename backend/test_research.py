@@ -5,8 +5,8 @@ This script runs the agent and prints the FULL conversation trace so you can
 see every decision the model made, every tool it called, and every result it
 received. This is the best way to understand the agent loop in action.
 
-Run from arco-papers (uses arco-papers/venv, not the parent .venv):
-  cd C:\\Usama\\Projects\\arco\\arco-papers
+Run from istatis-papers (uses istatis-papers/venv, not the parent .venv):
+  cd C:\\Usama\\Projects\\istatis\\istatis-papers
   .\\venv\\Scripts\\Activate.ps1
   python backend\\test_research.py
 """

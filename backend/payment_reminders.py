@@ -62,13 +62,13 @@ def run_reminders():
         reminded = p["reminded_at"]
 
         if overdue == 0 and "due" not in reminded:
-            template = "arco_payment_due"
+            template = "istatis_payment_due"
             stage = "due"
         elif overdue >= 7 and "7d" not in reminded:
-            template = "arco_payment_overdue_7"
+            template = "istatis_payment_overdue_7"
             stage = "7d"
         elif overdue >= 14 and "14d" not in reminded:
-            template = "arco_payment_overdue_14"
+            template = "istatis_payment_overdue_14"
             stage = "14d"
         else:
             continue

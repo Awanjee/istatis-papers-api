@@ -52,7 +52,7 @@ def build_product_docs() -> list[str]:
         categories.setdefault(cat, []).append(p)
 
     for cat_name, cat_products in categories.items():
-        lines = [f"Arco Papers - {cat_name}:"]
+        lines = [f"iStatis - {cat_name}:"]
         for p in cat_products:
             tiers = sorted(
                 p["pricing_tiers"],
@@ -71,7 +71,7 @@ def build_product_docs() -> list[str]:
 
     # Company info doc
     docs.append(
-        "Arco Papers - Company Information:\n"
+        "iStatis - Company Information:\n"
         "Manufacturer and supplier of envelopes, "
         "paper, file carriers, registers and "
         "notebooks in Islamabad, Rawalpindi and "
@@ -158,7 +158,7 @@ def build_agent():
         vectorstore.as_retriever(search_kwargs={"k": 2}),
         name="search_products",
         description=(
-            "Search Arco Papers product catalogue "
+            "Search iStatis product catalogue "
             "for product info, specs, pricing, "
             "and company details."
         ),
@@ -175,7 +175,7 @@ def build_agent():
             (
                 "system",
                 "You are a professional sales assistant "
-                "for Arco Papers, a paper manufacturer "
+                "for iStatis, a paper manufacturer "
                 "in Islamabad, Pakistan. Be concise and "
                 "helpful. Always use tools for pricing. "
                 "Quote prices in PKR only. "
@@ -250,7 +250,7 @@ async def generate_quote(
             (
                 "system",
                 "You are a professional sales "
-                "representative for Arco Papers, a "
+                "representative for iStatis, a "
                 "paper manufacturer in Islamabad, "
                 "Pakistan. Generate a formal but "
                 "friendly quote email body. Include: "
@@ -259,7 +259,7 @@ async def generate_quote(
                 "clearly in PKR, mention delivery is "
                 "available across Pakistan, ask them "
                 "to reply to confirm the order, sign "
-                "off as Arco Papers Sales Team. "
+                "off as iStatis Sales Team. "
                 "Keep it under 150 words.",
             ),
             (

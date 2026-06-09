@@ -1,13 +1,13 @@
 """
-RAG module — Arco Papers catalog indexer and retriever.
+RAG module — iStatis catalog indexer and retriever.
 
-Embeds backend/data/arco_catalog.json into a local Chroma vector store
-(chroma_arco/) using OpenAI text-embedding-3-small.
+Embeds backend/data/istatis_catalog.json into a local Chroma vector store
+(chroma_istatis/) using OpenAI text-embedding-3-small.
 
 Usage
 -----
-# Index once (creates / updates chroma_arco/):
-    cd C:\\Usama\\Projects\\arco-papers
+# Index once (creates / updates chroma_istatis/):
+    cd C:\\Usama\\Projects\\istatis-papers
     venv\\Scripts\\python backend/rag.py
 
 # Import in any agent:
@@ -31,9 +31,9 @@ load_dotenv()
 # Paths
 # ---------------------------------------------------------------------------
 _HERE = Path(__file__).parent                          # backend/
-CATALOG_PATH = _HERE / "data" / "arco_catalog.json"
-CHROMA_DIR = _HERE.parent / "chroma_arco"              # project root / chroma_arco
-COLLECTION_NAME = "arco_catalog"
+CATALOG_PATH = _HERE / "data" / "istatis_catalog.json"
+CHROMA_DIR = _HERE.parent / "chroma_istatis"              # project root / chroma_istatis
+COLLECTION_NAME = "istatis_catalog"
 
 
 # ---------------------------------------------------------------------------
@@ -41,7 +41,7 @@ COLLECTION_NAME = "arco_catalog"
 # ---------------------------------------------------------------------------
 
 def _load_catalog() -> list[Document]:
-    """Read arco_catalog.json and convert each entry to a LangChain Document."""
+    """Read istatis_catalog.json and convert each entry to a LangChain Document."""
     with open(CATALOG_PATH, "r", encoding="utf-8") as fh:
         entries = json.load(fh)
 
@@ -64,7 +64,7 @@ def _get_embeddings() -> OpenAIEmbeddings:
 
 def index_catalog() -> int:
     """
-    Embed all catalog documents and persist them in chroma_arco/.
+    Embed all catalog documents and persist them in chroma_istatis/.
 
     Safe to call repeatedly — Chroma will overwrite the collection.
     Returns the number of documents indexed.
@@ -100,7 +100,7 @@ def get_vectorstore() -> Chroma:
 
 def query_catalog(question: str, k: int = 3) -> str:
     """
-    Semantic search over the Arco catalog.
+    Semantic search over the iStatis catalog.
 
     Returns a formatted string with the top-k matching catalog entries.
     Raises RuntimeError if the collection hasn't been indexed yet.
@@ -126,7 +126,7 @@ def query_catalog(question: str, k: int = 3) -> str:
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("Arco Papers — Catalog Indexer")
+    print("iStatis — Catalog Indexer")
     print("=" * 60)
     print(f"  Catalog : {CATALOG_PATH}")
     print(f"  Store   : {CHROMA_DIR}")

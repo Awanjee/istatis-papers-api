@@ -34,7 +34,7 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 
 # find_dotenv() walks up from the current directory until it finds a .env file.
-# This means we can run from inside /backend and still load /arco-papers/.env.
+# This means we can run from inside /backend and still load /istatis-papers/.env.
 load_dotenv(find_dotenv())
 
 # The OpenAI client reads OPENAI_API_KEY from the environment automatically.

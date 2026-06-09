@@ -9,8 +9,14 @@ __pycache__/
 .idea/
 .vscode/
 chroma_db/
-chroma_arco/
+chroma_istatis/
 
 # Local Cursor rules (personal, not shared)
 .cursor/rules/profile.local.md
 .cursor/rules/handover.global.md
+
+# Eval harness — private data, never commit
+eval/test_images/
+eval/dataset.json
+eval/results/
+eval/coverage.txt

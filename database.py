@@ -11,11 +11,11 @@ supabase: Client = create_client(url, key)
 
 
 def get_tenant_id() -> str:
-    """Get Arco Papers tenant ID."""
+    """Get iStatis tenant ID."""
     result = (
         supabase.table("tenants")
         .select("id")
-        .eq("name", "Arco Papers")
+        .eq("name", "iStatis")
         .single()
         .execute()
     )
@@ -168,7 +168,7 @@ def save_quote(
 
 
 def get_client_by_email(email: str) -> dict | None:
-    """Find a client row by email for the Arco Papers tenant."""
+    """Find a client row by email for the iStatis tenant."""
     tenant_id = get_tenant_id()
     result = (
         supabase.table("clients")

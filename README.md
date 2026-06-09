@@ -1,6 +1,6 @@
-# arco-papers-api
+# istatis-papers-api
 
-Python backend for the Arco Papers AI platform — a family paper manufacturing business in Islamabad, Pakistan. The API powers an AI assistant, quotation flow, and operational automations (payment reminders, research agents) while integrating with Supabase for product and order data.
+Python backend for the iStatis AI platform — a family paper manufacturing business in Islamabad, Pakistan. The API powers an AI assistant, quotation flow, and operational automations (payment reminders, research agents) while integrating with Supabase for product and order data.
 
 ## What this does
 
@@ -39,7 +39,7 @@ Python backend for the Arco Papers AI platform — a family paper manufacturing 
 ## Project structure
 
 ```
-arco-papers/
+istatis-papers/
 ├── main.py                 # FastAPI app, routes, quote email
 ├── agent.py                # LangChain chat + quote tools, Chroma RAG
 ├── auth.py                 # Supabase JWT validation
@@ -68,7 +68,7 @@ arco-papers/
 ## Local setup
 
 ```powershell
-cd arco-papers
+cd istatis-papers
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -114,8 +114,8 @@ python backend\payment_reminders.py
 
 Configured for [Render](https://render.com): `uvicorn main:app --host 0.0.0.0 --port $PORT`. Set `OPENAI_API_KEY` and Supabase secrets in the Render dashboard.
 
-Public URL used by the Flutter app: `https://arco-papers-api.onrender.com`
+Public URL used by the Flutter app: `https://istatis-papers-api.onrender.com`
 
 ## Related
 
-- Flutter client: [arco-papers-app](https://github.com/Awanjee/arco-papers-app) (sibling repo / `arco_papers_app` in monorepo)
+- Flutter client: [istatis-papers-app](https://github.com/Awanjee/istatis-papers-app) (sibling repo / `istatis_app` in monorepo)
