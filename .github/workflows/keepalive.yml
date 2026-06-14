@@ -13,4 +13,4 @@ jobs:
         run: |
           curl -fsS "https://nsdjwgqqpskuwnhddqfk.supabase.co/rest/v1/products?select=*&limit=1" \
             -H "apikey: sb_publishable_Ou5djg0V1TQrQVJToxoC6g_GqSvkXVt" \
-            -H "Authorization: Bearer sb_publishable_Ou5djg0V1TQrQVJToxoC6g_GqSvkXVts"
+            -H "Authorization: Bearer sb_publishable_Ou5djg0V1TQrQVJToxoC6g_GqSvkXVt"
