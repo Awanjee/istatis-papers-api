@@ -1,0 +1,16 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    - cron: '17 6 * * *'    # daily 06:17 UTC, off the hour to dodge GitHub cron congestion
+  workflow_dispatch:          # gives you a manual "Run workflow" button to test
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Supabase to register activity
+        run: |
+          curl -fsS "${{ https://nsdjwgqqpskuwnhddqfk.supabase.co }}/rest/v1/products?select=*&limit=1" \
+            -H "apikey: ${{ sb_publishable_Ou5djg0V1TQrQVJToxoC6g_GqSvkXVt }}" \
+            -H "Authorization: Bearer ${{ sb_publishable_Ou5djg0V1TQrQVJToxoC6g_GqSvkXVt }}"
